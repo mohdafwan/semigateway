@@ -99,7 +99,7 @@ class D {
       return null;
     }
   }
-  
+
   Future<void> changeOTAStatus(bool isIt, {String? otaStatus}) async {
     await handleDropdownChange(
       fieldConfig: FC_OTA_STATUS,
@@ -171,8 +171,6 @@ class D {
     );
   }
   //  RTU Dropdown
-
-
 
   // STATUS SETUP
   Future<String?> queryJsonStatus() async {

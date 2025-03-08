@@ -119,6 +119,13 @@ class PresentControllers {
     return _slaveSizeControllers[key]!;
   }
 
+   TextEditingController getSlaveEndiannessController(int slaveIndex, int inputIndex) {
+    String key = 'slave${slaveIndex}_name$inputIndex';
+    _slaveNameControllers[key] ??= TextEditingController();
+    return _slaveNameControllers[key]!;
+  }
+
+
   // Modify handleSlaveFieldCompletion method
   void handleSlaveFieldCompletion(
       int slaveIndex, int inputIndex, String type, String value) {

@@ -936,50 +936,80 @@ class _PresentScreenState extends State<PresentScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    backgroundColor: AppColor.buttonColor,
-                    child: Text(
-                      '${slaveIndex + 1}',
-                      style: const TextStyle(
-                        color: AppColor.fontColor,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: AppColor.buttonColor,
+                        child: Text(
+                          '${slaveIndex + 1}',
+                          style: const TextStyle(
+                            color: AppColor.fontColor,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 120),
+                         _buildLabeledField(
+                            'Endianness',
+                            '',
+                            _controllers.getSlaveNameController(
+                                slaveIndex, slaveIndex,),
+                          ),
+                    ],
                   ),
                   const SizedBox(height: 10),
                   // Headers row
-                  const Row(
+                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      SizedBox(width: 50), // Space for the index
+                   // Space for the index
                       Expanded(
-                        child: Text(
-                          'Name',
-                          style: TextStyle(
-                            color: AppColor.fontColor,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
+                        flex: 1,
+                        child: Container(
+                          // color: Colors.red,
+                          child: const Center(
+                            child: Text(
+                              'Name',
+                              style: TextStyle(
+                                color: AppColor.fontColor,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ),
                       ),
                       Expanded(
-                        child: Text(
-                          'Address',
-                          style: TextStyle(
-                            color: AppColor.fontColor,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
+                        flex: 3,
+                        child: Container(
+                          // color: Colors.red,
+                          child: const Center(
+                            child: Text(
+                              'Address',
+                              style: TextStyle(
+                                color: AppColor.fontColor,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ),
                       ),
+                      
                       Expanded(
-                        child: Text(
-                          'Size',
-                          style: TextStyle(
-                            color: AppColor.fontColor,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
+                        child: Container(
+                          // color: Colors.green,
+                          child:const Center(
+                            child: Text(
+                              'Size',
+                              style: TextStyle(
+                                color: AppColor.fontColor,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -994,7 +1024,7 @@ class _PresentScreenState extends State<PresentScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const SizedBox(width: 8),
+                          // const SizedBox(width: 8),
                           _buildLabeledField(
                             '',
                             '',
