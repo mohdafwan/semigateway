@@ -1065,6 +1065,20 @@ class _PresentScreenState extends State<PresentScreen> {
   }
 
   Future<void> _fetchAllConfigurations() async {
+    // Show loading indicator using showDialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Center(
+          child: CircularProgressIndicator(
+            strokeWidth: 1,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          ),
+        );
+      },
+    );
+
     try {
       // Fetch all configurations in sequence
       await Handler().sendWiFiConfiguration(false);
@@ -1082,8 +1096,6 @@ class _PresentScreenState extends State<PresentScreen> {
         onSlaveCountChanged: () {
           setState(() {
             // This will rebuild the UI when slave count changes
-            // The _buildSlaveContainers() method will be called again
-            // with the new slave count from the controller
           });
         },
       );
@@ -1102,8 +1114,12 @@ class _PresentScreenState extends State<PresentScreen> {
       setState(() {});
 
       initializeDropdowns();
+
     } catch (e) {
       print("Error fetching all configurations: $e");
+    } finally {
+      // Hide loading indicator
+      Navigator.pop(context);
     }
   }
 }
