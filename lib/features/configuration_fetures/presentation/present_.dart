@@ -3,10 +3,12 @@ import 'dart:ffi';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:intl/intl.dart';
 import 'package:semicalibration/core/ui/appcolor.dart';
 import 'package:semicalibration/core/ui/defaultButtom.dart';
 import 'package:semicalibration/features/configuration_fetures/domain/bloc/frames/frames.dart';
 import 'package:semicalibration/features/configuration_fetures/domain/repository/d.dart';
+import 'package:semicalibration/features/configuration_fetures/domain/repository/database_helper.dart';
 import 'package:semicalibration/features/configuration_fetures/domain/repository/f.dart';
 import 'package:semicalibration/features/configuration_fetures/domain/repository/handler.dart';
 import 'package:semicalibration/features/configuration_fetures/domain/repository/tcp_connection.dart';
@@ -21,7 +23,11 @@ class PresentScreen extends StatefulWidget {
 }
 
 class _PresentScreenState extends State<PresentScreen> {
+  String? lastChangeTime;
   Frames frame = Frames();
+
+  // DataBase
+
   final ScrollController _scrollController = ScrollController();
   final ScrollController _scrollControllerRight = ScrollController();
   bool _isDragging = false;
@@ -57,30 +63,48 @@ class _PresentScreenState extends State<PresentScreen> {
     super.initState();
     initializeDropdowns();
     _initConnection();
+    _loadLastChangeTime();
     _tcpConnection.messageController.stream.listen((message) {
       log(message); // For debugging
     });
   }
 
- // this is the drop done thing
+  //DataBase configs
+  Future<void> _loadLastChangeTime() async {
+    String? time = await DatabaseHelper().getLastChangeTime();
+    if (time != null) {
+      setState(() {
+        lastChangeTime = time;
+      });
+    }
+  }
+
+  Future<void> _saveLastChangeTime(String time) async {
+    await DatabaseHelper().saveLastChangeTime(time);
+  }
+
+  // this is the drop done thing
   void initializeDropdowns() async {
-  String? jsonStatus = await D.instance.queryJsonStatus();
-  if (jsonStatus != null) {
-    setState(() {
-      selectedV10Status = jsonStatus;
-    });
-  }
-  
-  String? ch1Status = await D.instance.queryJsonCh1Status();
-  if (ch1Status != null) {
-    setState(() {
-      selectedMa420Ch1Status = ch1Status;
-    });
-  }
+    String? jsonStatus = await D.instance.queryJsonStatus();
+    if (jsonStatus != null) {
+      setState(() {
+        selectedV10Status = jsonStatus;
+      });
+    }
+
+    String? ch1Status = await D.instance.queryJsonCh1Status();
+    if (ch1Status != null) {
+      setState(() {
+        selectedMa420Ch1Status = ch1Status;
+      });
+    }
   }
 
   Future<void> _initConnection() async {
     bool connected = await _tcpConnection.connect("192.168.4.1", 23);
+    if(connected == false){
+      log("NO CONNECTIONS");
+    }
     setState(() {
       isConnected = connected;
     });
@@ -125,28 +149,58 @@ class _PresentScreenState extends State<PresentScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: AppColor.secondaryColor,
         title: Row(
           children: [
-            Text(
-              'Configuration ${isConnected ? '(Connected)' : '(Disconnected)'}',
-              style: TextStyle(
-                color: isConnected ? Colors.green : Colors.white,
+            Tooltip(
+              message: isConnected ? "Status Connected" : "Status Disconnected",
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  color: isConnected ? Colors.green : Colors.red,
+                ),
               ),
             ),
             const SizedBox(width: 10),
-            IconButton(
-                onPressed: () async {
-                  if (isConnected) {
-                    await _fetchAllConfigurations();
-                  }
-                },
-                icon: const Icon(Icons.flash_on_outlined)),
+            Tooltip(
+              message: "Refresh Configurations",
+              child: IconButton(
+                  hoverColor: AppColor.buttonColorx,
+                  focusColor: AppColor.buttonColorx,
+                  color: Colors.white,
+                  splashColor: AppColor.buttonColorx,
+                  splashRadius: 45,
+                  onPressed: () async {
+                    if (isConnected) {
+                      await _fetchAllConfigurations();
+                    }
+                  },
+                  icon: const Icon(
+                    Icons.flash_on_outlined,
+                  )),
+            ),
           ],
         ),
         actions: [
+          const SizedBox(width: 10),
+            if (lastChangeTime != null)
+              Text(
+                'Last change: $lastChangeTime',
+                style: const TextStyle(color: Colors.white),
+              ),
+              const SizedBox(width: 10),
           IconButton(
             icon: Icon(isConnected ? Icons.link : Icons.link_off),
             onPressed: _initConnection,
+          ),
+          IconButton(
+            icon: const Icon(Icons.live_help),
+            onPressed: () async {
+             
+            },
           ),
         ],
       ),
@@ -493,9 +547,7 @@ class _PresentScreenState extends State<PresentScreen> {
                                         },
                                         hint: 'Select RTU Type',
                                       ),
-                                      _buildLabeledField(
-                                          '4-20mA CH1 Name:',
-                                          '',
+                                      _buildLabeledField('4-20mA CH1 Name:', '',
                                           _controllers.ma420Ch1NameController),
                                     ]),
                                     const SizedBox(height: 10),
@@ -951,20 +1003,22 @@ class _PresentScreenState extends State<PresentScreen> {
                         ),
                       ),
                       const SizedBox(width: 120),
-                         _buildLabeledField(
-                            'Endianness',
-                            '',
-                            _controllers.getSlaveNameController(
-                                slaveIndex, slaveIndex,),
-                          ),
+                      _buildLabeledField(
+                        'Endianness',
+                        '',
+                        _controllers.getSlaveNameController(
+                          slaveIndex,
+                          slaveIndex,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 10),
                   // Headers row
-                   Row(
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                   // Space for the index
+                      // Space for the index
                       Expanded(
                         flex: 1,
                         child: Container(
@@ -997,11 +1051,11 @@ class _PresentScreenState extends State<PresentScreen> {
                           ),
                         ),
                       ),
-                      
+
                       Expanded(
                         child: Container(
                           // color: Colors.green,
-                          child:const Center(
+                          child: const Center(
                             child: Text(
                               'Size',
                               style: TextStyle(
@@ -1115,6 +1169,12 @@ class _PresentScreenState extends State<PresentScreen> {
 
       initializeDropdowns();
 
+      // Update last Fetch Time
+      String formattedTime = DateFormat('hh:mm a').format(DateTime.now());
+      setState(() {
+        lastChangeTime = formattedTime;
+      });
+      await _saveLastChangeTime(formattedTime);
     } catch (e) {
       print("Error fetching all configurations: $e");
     } finally {

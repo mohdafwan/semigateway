@@ -39,9 +39,9 @@ class TcpConnection {
   Future<bool> connect(String host, int port) async {
     try {
       _client = CTelnetClient(
-        host: "192.168.4.1",
-        port: 23,
-        timeout: const Duration(seconds: 30),
+        host: host,
+        port: port,
+        timeout: const Duration(seconds: 1),
         onConnect: () {
           isConnected = true;
           messageController.add('Connected');
@@ -66,6 +66,11 @@ class TcpConnection {
         onError: (error) => messageController.add('Stream error: $error'),
         onDone: () => messageController.add('Stream closed'),
       );
+
+      await Future.delayed(const Duration(seconds: 1));
+      if (!isConnected) {
+        throw TimeoutException('Timeout for connection to $host:$port exceeded');
+      }
 
       return true;
     } catch (e) {
