@@ -680,7 +680,6 @@ class PresentControllers {
           isUpdate: true,
         );
         break;
-
       case 'Password:':
         _frame.sendAndGetConfigurationSequence(
           configs: [
@@ -693,7 +692,6 @@ class PresentControllers {
           isUpdate: true,
         );
         break;
-
       case 'Server:':
         _frame.sendAndGetConfigurationSequence(
           configs: [

@@ -1,3 +1,5 @@
+// ignore_for_file: unused_local_variable
+
 import 'dart:convert';
 
 import 'package:ctelnet/ctelnet.dart';
@@ -68,7 +70,7 @@ class TcpConnection {
       );
 
       await Future.delayed(const Duration(seconds: 1));
-      if (!isConnected) {
+      if (isConnected) {
         throw TimeoutException('Timeout for connection to $host:$port exceeded');
       }
 

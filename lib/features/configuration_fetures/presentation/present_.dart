@@ -1,17 +1,14 @@
 import 'dart:developer';
-import 'dart:ffi';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:semicalibration/core/ui/appcolor.dart';
 import 'package:semicalibration/core/ui/defaultButtom.dart';
 import 'package:semicalibration/features/configuration_fetures/domain/bloc/frames/frames.dart';
 import 'package:semicalibration/features/configuration_fetures/domain/repository/d.dart';
 import 'package:semicalibration/features/configuration_fetures/domain/repository/database_helper.dart';
-import 'package:semicalibration/features/configuration_fetures/domain/repository/f.dart';
 import 'package:semicalibration/features/configuration_fetures/domain/repository/handler.dart';
 import 'package:semicalibration/features/configuration_fetures/domain/repository/tcp_connection.dart';
+import 'package:semicalibration/features/configuration_fetures/presentation/details_screen.dart';
 import 'package:semicalibration/features/configuration_fetures/presentation/widgets/labeled_dropdown.dart';
 import 'controllers/present_controllers.dart';
 
@@ -102,7 +99,7 @@ class _PresentScreenState extends State<PresentScreen> {
 
   Future<void> _initConnection() async {
     bool connected = await _tcpConnection.connect("192.168.4.1", 23);
-    if(connected == false){
+    if (connected == false) {
       log("NO CONNECTIONS");
     }
     setState(() {
@@ -186,21 +183,29 @@ class _PresentScreenState extends State<PresentScreen> {
         ),
         actions: [
           const SizedBox(width: 10),
-            if (lastChangeTime != null)
-              Text(
-                'Last change: $lastChangeTime',
-                style: const TextStyle(color: Colors.white),
-              ),
-              const SizedBox(width: 10),
+          if (lastChangeTime != null)
+            Text(
+              'Last change: $lastChangeTime',
+              style: const TextStyle(color: Colors.white),
+            ),
+          const SizedBox(width: 10),
           IconButton(
             icon: Icon(isConnected ? Icons.link : Icons.link_off),
             onPressed: _initConnection,
           ),
-          IconButton(
-            icon: const Icon(Icons.live_help),
-            onPressed: () async {
-             
-            },
+          Tooltip(
+            message: "Help",
+            child: IconButton(
+              icon: const Icon(Icons.live_help),
+              onPressed: () async {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const DetailsScreen(),
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -844,9 +849,29 @@ class _PresentScreenState extends State<PresentScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Not connected to device'),
+                  const Text(
+                    'Not connected to device',
+                    style: TextStyle(fontSize: 20),
+                  ),
+                  const SizedBox(height: 10),
                   ElevatedButton(
-                    onPressed: _initConnection,
+                    onPressed: () async {
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (BuildContext context) {
+                          return const Center(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.9,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          );
+                        },
+                      );
+                      await _initConnection();
+                      Navigator.pop(context); // Remove loading indicator
+                    },
                     child: Text('Connect'),
                   ),
                 ],

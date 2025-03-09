@@ -13,11 +13,10 @@ class D {
   static D get instance => _instance;
 
   Frames frame = Frames();
-  final PresentControllers _controllers = PresentControllers();
 
-  /**============================================
-   *               changeConfig Method
-   *=============================================**///
+  /// ============================================
+  ///               changeConfig Method
+  ///=============================================*//
 
   Future<void> handleDropdownChange({
     required String fieldConfig,
