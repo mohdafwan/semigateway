@@ -69,10 +69,10 @@ class TcpConnection {
         onDone: () => messageController.add('Stream closed'),
       );
 
-      await Future.delayed(const Duration(seconds: 1));
-      if (isConnected) {
-        throw TimeoutException('Timeout for connection to $host:$port exceeded');
-      }
+      // await Future.delayed(const Duration(seconds: 3));
+      // if (!isConnected) {
+      //   throw TimeoutException('Timeout for connection to $host:$port exceeded');
+      // }
 
       return true;
     } catch (e) {

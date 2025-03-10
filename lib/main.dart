@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:overlay_support/overlay_support.dart';
 import 'package:semicalibration/core/ui/appcolor.dart';
 import 'package:semicalibration/features/configuration_fetures/presentation/present_.dart';
 import 'package:window_manager/window_manager.dart';
@@ -32,19 +33,21 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'My App',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: AppColor.primaryColor,
-        colorScheme: const ColorScheme.dark(
-          primary: AppColor.buttonColor,
-          secondary: AppColor.secondaryColor,
-          background: AppColor.primaryColor,
+    return OverlaySupport.global(
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Gateway App',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          scaffoldBackgroundColor: AppColor.primaryColor,
+          colorScheme: const ColorScheme.dark(
+            primary: AppColor.buttonColor,
+            secondary: AppColor.secondaryColor,
+            background: AppColor.primaryColor,
+          ),
         ),
+        home: const PresentScreen(),
       ),
-      home: const PresentScreen(),
     );
   }
 }

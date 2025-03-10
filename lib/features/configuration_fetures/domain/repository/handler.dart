@@ -423,47 +423,54 @@ class Handler {
           configs: configs,
           isUpdate: true,
         );
-        
+
         log("Calibrate Update Results: $results");
-        
+
         // Add response handling for update case
         if (results.isNotEmpty) {
           for (var i = 0; i < configs.length; i++) {
             switch (configs[i]['fc']) {
               case FC_CALIBRATE_LOW_HIGH:
                 if (configs[i]['fieldId'] == CALIBRATE_LOW) {
-                  _controllers.v10CalibLowController.text = results[i] ?? 'No Value';
+                  _controllers.v10CalibLowController.text =
+                      results[i] ?? 'No Value';
                 } else if (configs[i]['fieldId'] == CALIBRAT_HIGH) {
-                  _controllers.v10CalibHighController.text = results[i] ?? 'No Value';
+                  _controllers.v10CalibHighController.text =
+                      results[i] ?? 'No Value';
                 }
                 break;
 
               case FC_CALIBRATE_CH1_LOW_HIGH:
                 if (configs[i]['fieldId'] == CALIBRATE_LOW) {
-                  _controllers.ma420Ch1CalibLowController.text = results[i] ?? 'No Value';
+                  _controllers.ma420Ch1CalibLowController.text =
+                      results[i] ?? 'No Value';
                 } else if (configs[i]['fieldId'] == CALIBRAT_HIGH) {
-                  _controllers.ma420Ch1CalibHighController.text = results[i] ?? 'No Value';
+                  _controllers.ma420Ch1CalibHighController.text =
+                      results[i] ?? 'No Value';
                 }
                 break;
 
               case FC_CALIBRATE_CH2_LOW_HIGH:
                 if (configs[i]['fieldId'] == CALIBRATE_LOW) {
-                  _controllers.ma420Ch2CalibLowController.text = results[i] ?? 'No Value';
+                  _controllers.ma420Ch2CalibLowController.text =
+                      results[i] ?? 'No Value';
                 } else if (configs[i]['fieldId'] == CALIBRAT_HIGH) {
-                  _controllers.ma420Ch2CalibHighController.text = results[i] ?? 'No Value';
+                  _controllers.ma420Ch2CalibHighController.text =
+                      results[i] ?? 'No Value';
                 }
                 break;
             }
           }
         }
-        
+
         // Retry logic for failed updates
         if (results.isNotEmpty) {
           for (var i = 0; i < configs.length; i++) {
             if (results[i] == null || results[i].isEmpty) {
               for (int attempt = 0; attempt < 4; attempt++) {
                 final retryConfig = [configs[i]];
-                final retryResults = await frame.sendAndGetConfigurationSequence(
+                final retryResults =
+                    await frame.sendAndGetConfigurationSequence(
                   configs: retryConfig,
                   isUpdate: true,
                 );
@@ -762,6 +769,9 @@ class Handler {
                       slaveIndex++) {
                     print('\nFetching data for slave $slaveIndex');
                     await _controllers.fetchSlaveData(slaveIndex);
+                    
+                    // Add this: Fetch Endianness for each slave
+                    await slaveEndiannessConfigurationHandler(slaveIndex, slaveIndex, false);
                   }
 
                   if (onSlaveCountChanged != null) {
@@ -925,4 +935,41 @@ class Handler {
       print("Error in calibrate configuration: $e");
     }
   }
+
+  Future<void> slaveEndiannessConfigurationHandler(
+  int slaveIndex,
+  int inputIndex,
+  bool isUpdate,
+) async {
+  try {
+    print('\n==== Fetching Endianness for Slave $slaveIndex ====');
+    String ff = inputIndex < 9 ? '0${inputIndex + 1}' : '0A';
+    
+    final configs = [
+      {
+        'fc': FC_RTC_ENDIANNESS,
+        'fieldId': ff,
+        'value': _controllers.getSlaveEndiannessController(slaveIndex, inputIndex).text,
+      }
+    ];
+
+    if (!isUpdate) {
+      final results = await frame.sendAndGetConfigurationSequence(
+        configs: configs,
+        isUpdate: false,
+      );
+      
+      if (results.isNotEmpty && results[0] != null) {
+        print('Received endianness value: ${results[0]}');
+        
+        _controllers.getSlaveEndiannessController(slaveIndex, inputIndex).text = results[0];
+        
+        _controllers.receiveMessageController.notifyListeners();
+      }
+    }
+  } catch (e) {
+    print("Error fetching endianness: $e");
+    print("Stack trace: ${StackTrace.current}");
+  }
+}
 }

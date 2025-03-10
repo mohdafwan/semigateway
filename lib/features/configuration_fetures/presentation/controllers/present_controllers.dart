@@ -1,7 +1,10 @@
 import 'dart:developer';
 import 'dart:async'; // Add this import
 
+import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
+import 'package:overlay_support/overlay_support.dart';
+import 'package:semicalibration/core/ui/appcolor.dart';
 import 'package:semicalibration/features/configuration_fetures/domain/bloc/frames/frames.dart';
 import 'package:semicalibration/features/configuration_fetures/domain/repository/f.dart';
 import 'package:semicalibration/features/configuration_fetures/domain/repository/tcp_connection.dart';
@@ -96,6 +99,7 @@ class PresentControllers {
   final receiveMessageController = ValueNotifier(<List<String>>[]);
 
   // Add these maps to store slave input controllers
+  final Map<String, TextEditingController> _slaveEndianessControllers = {};
   final Map<String, TextEditingController> _slaveNameControllers = {};
   final Map<String, TextEditingController> _slaveAddrControllers = {};
   final Map<String, TextEditingController> _slaveSizeControllers = {};
@@ -119,12 +123,15 @@ class PresentControllers {
     return _slaveSizeControllers[key]!;
   }
 
-   TextEditingController getSlaveEndiannessController(int slaveIndex, int inputIndex) {
-    String key = 'slave${slaveIndex}_name$inputIndex';
-    _slaveNameControllers[key] ??= TextEditingController();
-    return _slaveNameControllers[key]!;
+  TextEditingController getSlaveEndiannessController(
+      int slaveIndex, int inputIndex) {
+    String key = 'slave${slaveIndex}_endianness$inputIndex';
+    if (!_slaveEndianessControllers.containsKey(key)) {
+      _slaveEndianessControllers[key] = TextEditingController();
+      print('Created new controller for $key');
+    }
+    return _slaveEndianessControllers[key]!;
   }
-
 
   // Modify handleSlaveFieldCompletion method
   void handleSlaveFieldCompletion(
@@ -142,7 +149,17 @@ class PresentControllers {
     print('Field ID (ff): $ff');
 
     switch (type) {
-      case 'name':
+      case 'Endianness':
+        fc = FC_RTC_ENDIANNESS;
+        configData = {
+          'fc': fc,
+          'fieldId': ff,
+          'value': getSlaveEndiannessController(slaveIndex, inputIndex).text,
+        };
+        print(
+            'Endianness Controller Value: ${getSlaveEndiannessController(slaveIndex, inputIndex).text}');
+        break;
+      case 'Name':
         fc = FC_RTC_NAME;
         configData = {
           'fc': fc,
@@ -152,7 +169,7 @@ class PresentControllers {
         print(
             'Name Controller Value: ${getSlaveNameController(slaveIndex, inputIndex).text}');
         break;
-      case 'address':
+      case 'Address':
         fc = FC_RTC_ADDRESS;
         configData = {
           'fc': fc,
@@ -162,7 +179,7 @@ class PresentControllers {
         print(
             'Address Controller Value: ${getSlaveAddrController(slaveIndex, inputIndex).text}');
         break;
-      case 'size':
+      case 'Size':
         fc = FC_RTC_SIZE;
         configData = {
           'fc': fc,
@@ -186,6 +203,10 @@ class PresentControllers {
       print('Response Results: $results');
       if (results.isNotEmpty && results[0] != null) {
         switch (type) {
+          case 'endianness':
+            getSlaveAddrController(slaveIndex, inputIndex).text = results[0];
+            print('Updated Name Value: ${results[0]}');
+            break;
           case 'name':
             getSlaveNameController(slaveIndex, inputIndex).text = results[0];
             print('Updated Name Value: ${results[0]}');
@@ -199,7 +220,10 @@ class PresentControllers {
             print('Updated Size Value: ${results[0]}');
             break;
         }
+        receiveMessageController.notifyListeners();
       }
+    }).catchError((error) {
+      log('Error handling slave field completion: $error');
     });
   }
 
@@ -208,59 +232,27 @@ class PresentControllers {
     print('\n==== Fetching Slave Data ====');
     print('Slave Index: $slaveIndex');
 
-    final ffValues = [
-      DSSEMIRTC1,
-      DSSEMIRTC2,
-      DSSEMIRTC3,
-      DSSEMIRTC4,
-      DSSEMIRTC5,
-      DSSEMIRTC6,
-      DSSEMIRTC7,
-      DSSEMIRTC8,
-      DSSEMIRTC9,
-      DSSEMIRTC10
+    final configs = [
+      {
+        'fc': FC_RTC_ENDIANNESS,
+        'fieldId': DSSEMIRTC1,
+        'value': '?',
+      },
+      // ...existing configs...
     ];
 
-    for (var i = 0; i < ffValues.length; i++) {
-      print('\nFetching data for input $i (FF: ${ffValues[i]})');
+    final results = await _frame.sendAndGetConfigurationSequence(
+      configs: configs,
+      isUpdate: false,
+    );
 
-      final configs = [
-        {
-          'fc': FC_RTC_NAME,
-          'fieldId': ffValues[i],
-          'value': '',
-        },
-        {
-          'fc': FC_RTC_ADDRESS,
-          'fieldId': ffValues[i],
-          'value': '',
-        },
-        {
-          'fc': FC_RTC_SIZE,
-          'fieldId': ffValues[i],
-          'value': '',
-        },
-      ];
+    if (results.isNotEmpty) {
+      // Set Endianness value
+      getSlaveEndiannessController(slaveIndex, slaveIndex).text =
+          results[0] ?? '';
+      print('Set Endianness value: ${results[0]} for slave $slaveIndex');
 
-      print('Sending configs: $configs');
-      final results = await _frame.sendAndGetConfigurationSequence(
-        configs: configs,
-        isUpdate: false,
-      );
-      print('Received results: $results');
-
-      if (results.length >= 3) {
-        getSlaveNameController(slaveIndex, i).text = results[0] ?? '';
-        getSlaveAddrController(slaveIndex, i).text = results[1] ?? '';
-        getSlaveSizeController(slaveIndex, i).text = results[2] ?? '';
-
-        print('Updated controllers for input $i:');
-        print('  Name: ${getSlaveNameController(slaveIndex, i).text}');
-        print('  Address: ${getSlaveAddrController(slaveIndex, i).text}');
-        print('  Size: ${getSlaveSizeController(slaveIndex, i).text}');
-      } else {
-        print('Warning: Insufficient results received for input $i');
-      }
+      // ...rest of the existing code...
     }
   }
 
@@ -578,7 +570,15 @@ class PresentControllers {
             slaveCountController.text = data['data'];
             break;
         }
+        // HEAD CONTROLLER
+      } else if (data['fc'] == 0x33) {
+        switch (data['ff']) {
+          case 0x01:
+            getSlaveEndiannessController(1, 1).text = data['data'];
+            break;
+        }
       }
+
       //! RTC END
 
       //! TCP START
@@ -620,9 +620,18 @@ class PresentControllers {
     });
   }
 
-  void handleFieldCompletion(String fieldLabel, String value) {
+  //UPDATE THE FRAMES FUNCTION
+
+  void handleFieldCompletion(
+    String fieldLabel,
+    String value,
+  ) {
     print("Handling field completion for: '$fieldLabel' with value: '$value'");
 
+   showSimpleNotification(
+        position: NotificationPosition.bottom,
+        Text(" $fieldLabel $value is Stored"),
+        background: const Color.fromARGB(255, 0, 162, 255));
     switch (fieldLabel) {
       case 'SSID:':
         log("SSID complete with value: $value");
@@ -837,18 +846,6 @@ class PresentControllers {
           isUpdate: true,
         );
         break;
-      case '4-20mA CH1 Max:':
-        _frame.sendAndGetConfigurationSequence(
-          configs: [
-            {
-              'fc': FC_mA_MIN_MAX_2,
-              'fieldId': V_ANALOGMAX,
-              'value': value,
-            }
-          ],
-          isUpdate: true,
-        );
-        break;
 
       case '0-10V Calib Low:':
         _frame.sendAndGetConfigurationSequence(
@@ -926,7 +923,7 @@ class PresentControllers {
           isUpdate: true,
         );
         break;
-       case '4-20mA CH2 Calib Min:':
+      case '4-20mA CH2 Calib Min:':
         _frame.sendAndGetConfigurationSequence(
           configs: [
             {
@@ -938,7 +935,7 @@ class PresentControllers {
           isUpdate: true,
         );
         break;
-       case '4-20mA CH2 Calib High:':
+      case '4-20mA CH2 Calib High:':
         _frame.sendAndGetConfigurationSequence(
           configs: [
             {
@@ -950,7 +947,7 @@ class PresentControllers {
           isUpdate: true,
         );
         break;
-       case 'RTC Server:':
+      case 'RTC Server:':
         _frame.sendAndGetConfigurationSequence(
           configs: [
             {
@@ -1046,6 +1043,18 @@ class PresentControllers {
           isUpdate: true,
         );
         break;
+      case 'Endianness':
+        _frame.sendAndGetConfigurationSequence(
+          configs: [
+            {
+              'fc': FC_RTC_ENDIANNESS,
+              'fieldId': DSSEMIRTC1,
+              'value': value,
+            }
+          ],
+          isUpdate: true,
+        );
+        break;
       // JSON UPDATE
       case '1-10V Name:':
         _frame.sendAndGetConfigurationSequence(
@@ -1132,7 +1141,7 @@ class PresentControllers {
         );
         break;
 
-        // OTA CONFIGURATION
+      // OTA CONFIGURATION
       case 'API Key:':
         _frame.sendAndGetConfigurationSequence(
           configs: [
@@ -1218,7 +1227,7 @@ class PresentControllers {
           ],
           isUpdate: true,
         );
-        break;   
+        break;
       case 'TCP Port:':
         _frame.sendAndGetConfigurationSequence(
           configs: [
@@ -1249,6 +1258,19 @@ class PresentControllers {
             {
               'fc': FC_TCP_REGISTER_COUNT,
               'fieldId': TCP,
+              'value': value,
+            }
+          ],
+          isUpdate: true,
+        );
+        break;
+      // RTC CONFIGURATION
+      case 'Baudrate:':
+        _frame.sendAndGetConfigurationSequence(
+          configs: [
+            {
+              'fc': FC_RTC_BAUDRATE,
+              'fieldId': RTC,
               'value': value,
             }
           ],
@@ -1303,6 +1325,8 @@ class PresentControllers {
     fwPathController.dispose();
 
     // Dispose slave input controllers
+    _slaveEndianessControllers.values
+        .forEach((controller) => controller.dispose());
     _slaveNameControllers.values.forEach((controller) => controller.dispose());
     _slaveAddrControllers.values.forEach((controller) => controller.dispose());
     _slaveSizeControllers.values.forEach((controller) => controller.dispose());

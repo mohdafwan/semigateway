@@ -452,8 +452,25 @@ class _PresentScreenState extends State<PresentScreen> {
                                         'Slave Count:',
                                         '',
                                         _controllers.slaveCountController,
-                                        onChanged: (value) {
-                                          setState(() {});
+                                        onChanged: (value) async {
+                                          int slaveCount =
+                                              int.tryParse(value) ?? 0;
+                                          print(
+                                              'Slave count changed to: $slaveCount');
+
+                                          // Fetch endianness for all slaves
+                                          for (int slaveIndex = 0;
+                                              slaveIndex < slaveCount;
+                                              slaveIndex++) {
+                                            await Handler()
+                                                .slaveEndiannessConfigurationHandler(
+                                                    slaveIndex,
+                                                    slaveIndex,
+                                                    false);
+                                          }
+                                          setState(() {
+                                            // This will trigger rebuild when slave count changes
+                                          });
                                         },
                                       ),
                                     ]),
@@ -1031,10 +1048,18 @@ class _PresentScreenState extends State<PresentScreen> {
                       _buildLabeledField(
                         'Endianness',
                         '',
-                        _controllers.getSlaveNameController(
+                        _controllers.getSlaveEndiannessController(
                           slaveIndex,
                           slaveIndex,
                         ),
+                        onChanged: (p0) {
+                          _controllers.handleSlaveFieldCompletion(
+                            slaveIndex,
+                            slaveIndex,
+                            'Endianness',
+                            p0,
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -1109,6 +1134,10 @@ class _PresentScreenState extends State<PresentScreen> {
                             '',
                             _controllers.getSlaveNameController(
                                 slaveIndex, index),
+                            onChanged: (value) {
+                              _controllers.handleSlaveFieldCompletion(
+                                  slaveIndex, index, 'name', value);
+                            },
                           ),
                           const SizedBox(width: 8),
                           _buildLabeledField(
@@ -1116,6 +1145,10 @@ class _PresentScreenState extends State<PresentScreen> {
                             '',
                             _controllers.getSlaveAddrController(
                                 slaveIndex, index),
+                            onChanged: (value) {
+                              _controllers.handleSlaveFieldCompletion(
+                                  slaveIndex, index, 'address', value);
+                            },
                           ),
                           const SizedBox(width: 8),
                           _buildLabeledField(
@@ -1125,7 +1158,7 @@ class _PresentScreenState extends State<PresentScreen> {
                                 slaveIndex, index),
                             onChanged: (value) {
                               _controllers.handleSlaveFieldCompletion(
-                                  slaveIndex, index, 'name', value);
+                                  slaveIndex, index, 'size', value);
                             },
                           ),
                         ],
@@ -1144,7 +1177,6 @@ class _PresentScreenState extends State<PresentScreen> {
   }
 
   Future<void> _fetchAllConfigurations() async {
-    // Show loading indicator using showDialog
     showDialog(
       context: context,
       barrierDismissible: false,
